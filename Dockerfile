@@ -4,6 +4,6 @@ ADD kitchen.py .
 
 RUN pip install requests flask
 
-EXPOSE 3000
+EXPOSE 3030
 
-CMD ["python","-u","kitchen.py" ]
+CMD ["python","-u","kitchen.py"]

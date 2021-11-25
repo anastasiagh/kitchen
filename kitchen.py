@@ -16,7 +16,7 @@ logging.basicConfig(
     ]
 )
 
-TIME_UNIT = 10
+TIME_UNIT = 1
 
 orders_list = []
 cooks_list = [{
@@ -107,19 +107,18 @@ app = Flask(__name__)
 def order():
     response = request.get_json()
     logging.info(f'New order received from dinnig hall server: order id {response["order_id"]} items : {response["items"]} priority : {response["priority"]}' )
-    print(response)
+    # print(response)
     split_response(response)
     return {'isSuccess': True}
 
 
 def split_response(received_order):
-    priority = (-int(received_order['priority']))
     kitchen_order = {
         'order_id': received_order['order_id'],
         'table_id': received_order['table_id'],
         'waiter_id': received_order['waiter_id'],
         'items': received_order['items'],
-        'priority': priority,
+        'priority': received_order['priority'],
         'max_wait': received_order['max_wait'],
         'received_time': time.time(),
         'cooking_details': queue.Queue(),
@@ -127,11 +126,10 @@ def split_response(received_order):
         'time_start': received_order['time_start'],
     }
     orders_list.append(kitchen_order)
-    #split each order in a items queue available for cooks
     for index in received_order['items']:
         food_item = next((food for i, food in enumerate(menu) if food['id'] == index), None)
         if food_item is not None:
-            foods_queue.put_nowait((priority, next(counter),{
+            foods_queue.put_nowait((received_order['priority'], next(counter),{
                 'food_id': food_item['id'],
                 'order_id': received_order['order_id'],
                 'priority': int(received_order['priority'])
@@ -145,13 +143,12 @@ def cooking_process(cook, stoves_queue, ovens_queue, food_items):
             item = food_items.get_nowait()
             food_item = item[2]
             curr_counter = item[1]
-            print(food_item)
-            print(curr_counter)
-            print(curr_counter)
+            # print(food_item)
+            # print(curr_counter)
+            # print(curr_counter)
             food_details = next((food for food in menu if food['id'] == food_item['food_id']), None)
             (index, order_details) = next(((index, order) for index, order in enumerate(orders_list) if order['order_id'] == food_item['order_id']), (None, None))
             len_order_items = len(orders_list[index]['items'])
-            # check if cook can afford to do this type of food
             if food_details['complexity'] == cook['rank'] or food_details['complexity'] == cook['rank'] - 1:
                 cooking_aparatus = food_details['cooking-apparatus']
                 if cooking_aparatus is None:
@@ -186,7 +183,7 @@ def cooking_process(cook, stoves_queue, ovens_queue, food_items):
                         'cooking_details': list(orders_list[index]['cooking_details'].queue)
                     }
                     requests.post('http://localhost:3000/distribution', json=payload, timeout=0.0000000001)
-                    print(payload)
+                    # print(payload)
 
 
             else:
@@ -194,22 +191,6 @@ def cooking_process(cook, stoves_queue, ovens_queue, food_items):
 
         except Exception as e:
             pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 def cooks_cooking_process(cook, ovens, stoves, food_items):
